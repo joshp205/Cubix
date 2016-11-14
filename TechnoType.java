@@ -6,6 +6,10 @@ public class TechnoType{
    private Point2D coords2D;
 
    private int lives;
+   private int hitCoolDown;
+   public boolean collided;
+
+   private int layer;
    
    private Color[] color;
    private boolean wireframe;
@@ -22,6 +26,16 @@ public class TechnoType{
       dimensions = new Point3D(w, h, d);
       coords3D = new Point3D(x, y, z);
       coords2D = new Point2D(0,0);
+
+      if(tType == Type.PLAYER) {
+         layer = 2;
+         lives = 5;
+         hitCoolDown = 50;
+      }
+
+      if(tType == Type.ENEMY || tType == Type.POWERUP) {
+         collided = false;
+      }
       
       color = new Color[rgb.length];
       for(int i = 0; i < color.length; i++) {
@@ -34,11 +48,46 @@ public class TechnoType{
       this(tType, p.getX(), p.getY(), p.getZ(), dim.getX(), dim.getY(), dim.getZ(), rgb, i_wf);
    }
 
-   public void update() {
-      //TODO
+   public void update(TechnoType player, Level level, Camera cam) {
+      if(tType == Type.ENEMY || tType == Type.POWERUP) {
+         coords3D.setZ(coords3D.getZ() - level.getTravelDistance());
+         if(coords3D.getZ() < cam.getZ()) {
+            coords3D.setZ(level.getDepth());
+         }
+
+         if(coords3D.getZ() > level.getSegZGrid(level.getSegments() - level.getDarkSegments())) {
+            layer = 1;
+         } else if(coords3D.getZ() < player.getCoord3DZ() + player.getDimensionD()){
+            layer = 3;
+            collided = false;
+         } else if(!collided){
+            layer = 2;
+            if(Physics.calculateCollision(this, player)) {
+               player.setLives(player.getLives() - 1);
+               collided = true;
+               player.collided = true;
+            }
+         }
+      }
+
+      // TESTING CODE - COOLDOWN
+      if(tType == Type.PLAYER) {
+         if(collided == true) {
+            hitCoolDown--;
+            if(hitCoolDown%3 == 0) {
+               wireframe = false;
+            } else {
+               wireframe = true;
+            }
+            if(hitCoolDown == 0) {
+               collided = false;
+               hitCoolDown = 50;
+            }
+         }
+      }
    }
 
-   public void render(Drawing dSurface, Camera cam) {
+   public void render(TechnoType player, Drawing dSurface, Camera cam) {
       dSurface.drawCube(this, cam, dimensions.getX(), dimensions.getY(), dimensions.getZ());
    }
 
@@ -80,6 +129,14 @@ public class TechnoType{
    
    public Point2D getCoords2D() {
       return coords2D;
+   }
+
+   public int getLives() {
+      return lives;
+   }
+
+   public int getLayer() {
+      return layer;
    }
 
    public Color getColor(int index) {
@@ -151,6 +208,10 @@ public class TechnoType{
    
    public void setCoords2D(Point2D p) {
       setCoords2D(p.getX(), p.getY());
+   }
+
+   public void setLives(int lives) {
+      this.lives = lives;
    }
 
    public void setColor(int index, Color c) {

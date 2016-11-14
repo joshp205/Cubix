@@ -1,5 +1,6 @@
 import java.util.Scanner;
 import java.util.Random;
+import java.util.Arrays;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -12,13 +13,14 @@ import java.awt.event.*;
 import java.awt.Color;
 
 public class Game extends JFrame implements Runnable, KeyListener{
-   public final String TITLE = "GAME";
+   public final String TITLE = "Quadratfrei";
    public final int WIDTH = 960;
    public final int HEIGHT = WIDTH / 4 * 3;
 
    public final float LEVELWIDTH = 200f;
-   public final float LEVELDEPTH = 10000f;
-   public final float SPEED = 54f;
+   public final float LEVELDEPTH = 1000f;
+   public final float SPEED = 0.025f;
+   public final int LAYERS = 4;
 
    public final double MS_PER_UPDATE = 60.0;
    
@@ -33,17 +35,16 @@ public class Game extends JFrame implements Runnable, KeyListener{
 
    private Camera cam;
    private Level level;
+   private TechnoType[] tt;
    private TechnoType player;
 
-   private int[][] pColor = new int[][]{{255, 0, 0}, {0, 255, 0}, {0, 0, 255}};
+   private int[][] pColor = new int[][]{{182,176,238}, {124,80,169}, {91,68,172}};
+   private int[][] eColor = new int[][]{{199,102,42}, {166,50,40}, {112,28,52}};
+   private String[] status = new String[3];
 
    // Testing variables
-   public float x = 3f;
-   public float z = 500f;
-   public float rot = 0f;
-   public TechnoType[] enem;
    public Random rand = new Random();
-   private String[] status;
+   
    
    public static void main(String[] args) {
       Game game = new Game();
@@ -78,20 +79,26 @@ public class Game extends JFrame implements Runnable, KeyListener{
    }
 
    public void run() {
-    cam = new Camera(0f,65f,0f,1f);
-    level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, 10);
-    player = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,pColor,false);
-    cam.setZ(1f);
+    // Initialize Objects
+    cam = new Camera(0f,25f,0f,1f);
+    level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, 25, LAYERS);
+    tt = new TechnoType[5];
+    tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,pColor,false);
 
-    enem = new TechnoType[5];
-    for(int i = 0; i < 5; i++) {
-      enem[i] = new TechnoType(TechnoType.Type.ENEMY,rand.nextInt(50) - 25,0,rand.nextInt(10000) + 45,15,15,15,pColor,true);
+    for(int i = 1; i < tt.length; i++) {
+      tt[i] = new TechnoType(TechnoType.Type.ENEMY,rand.nextInt((int)LEVELWIDTH) - LEVELWIDTH/2f,0, i*100,15,15,15,eColor,false);
+    }
+
+    cam.setZ(1f);
+    tt[0].setCoord3DZ(110);
+    for(int i = 0; i < status.length; i++) {
+      status[i] = "x";
     }
     
-
+    // Enter Game Loop
     double previousTime = System.currentTimeMillis();
     double lag = 0.0;
-      
+
       while (running == true) {
         double currentTime = System.currentTimeMillis();
         double elapsedTime = currentTime - previousTime;
@@ -111,45 +118,16 @@ public class Game extends JFrame implements Runnable, KeyListener{
    public void update() {
 
     // LEVEL
-    level.setTravelDistance(level.getTravelDistance() + 1/level.getSpeed());
     level.update(cam);
 
     // OBJECTS
-    player.update();
-
-
-
-
-    // Testing Code
-    //cam.setZ((float)Math.cos(Math.toDegrees(rot)) * 45);
-    Color c = xColor.rainbowShift(player.getColorR(0), player.getColorG(0), player.getColorB(0));
-    Color d = xColor.rainbowShift(player.getColorR(1), player.getColorG(1), player.getColorB(1));
-    Color e = xColor.rainbowShift(player.getColorR(2), player.getColorG(2), player.getColorB(2));
-    player.setColor(0, c);
-    player.setColor(1, d);
-    player.setColor(2, e);
-    player.setCoord3DZ(110);
-    if(rot==360) {
-      rot=0;
-    }
-    rot+=90*0.0000075;
-
-    for(int i = 0; i < 5; i++) {
-      enem[i].setColor(0, c);
-      enem[i].setColor(1, c);
-      enem[i].setColor(2, c);
-      if(enem[i].getCoord3DZ() < cam.getZ()) {
-        enem[i].setCoord3DZ(rand.nextInt(1000) + 9000);
-      }
-      enem[i].setCoord3DZ(enem[i].getCoord3DZ() - level.getSegmentSize()/level.getSpeed());
-      //enem[i].setCoord3DX((float)Math.cos(Math.toDegrees(rot)) * 45);
+    for(TechnoType t : tt) {
+      t.update(tt[0], level, cam);
     }
 
-    // DEBUG
-    status = new String[3];
-    status[0] = String.format("Cam X: %f, Y: %f, Z: %f", cam.getX(), cam.getY(), cam.getZ());
-    status[1] = String.format("Techno X: %f, Y: %f, Z: %f",player.getCoord3DX(),
-                            player.getCoord3DY(), player.getCoord3DZ());
+    // UI
+    status[0] = String.format("Lives: %d", tt[0].getLives());
+    status[1] = String.format("Score: %d", level.getScore());
    }
    
    public void render() {
@@ -165,51 +143,65 @@ public class Game extends JFrame implements Runnable, KeyListener{
       dSurface = new Drawing(WIDTH,HEIGHT,g,g2d);
 
       dSurface.clearScreen();
-
-      level.render(dSurface,cam);
-      player.render(dSurface,cam);
-
-      // Testing code
-      for(int i = 0; i < 5; i++) {
-        enem[i].render(dSurface,cam);
-      }
-
-      // DEBUG
-      //Debug.draw(dSurface, Color.white, 5, 50);
-      if(status != null){
-        for(int i = 0; i < status.length; i++) {
-          if(status[i] == null) {
-            break;
-          } else {
-            dSurface.drawText(status[i], Color.white, 5, (i*15) + 50);
-          }
+      for(int i = 0; i <= LAYERS; i++) {
+        switch(i) {
+          // BACKGROUND
+          case 0: level.render(dSurface, cam, 0);
+                  break;
+          // OBJECTS
+          case 1: for(TechnoType t : tt) {
+                    if(t.getLayer() == 1) {
+                      t.render(tt[0], dSurface, cam);
+                    }
+                  }
+                  break;
+          // FOREGROUND
+          case 2: level.render(dSurface, cam, 2);
+                  for(TechnoType t : tt) {
+                    if(t.getLayer() == 2) {
+                      t.render(tt[0], dSurface, cam);
+                    }
+                  }
+                  tt[0].render(tt[0], dSurface, cam);
+                  break;
+          // PAST PLAYER
+          case 3: for(TechnoType t : tt) {
+                    if(t.getLayer() == 3) {
+                      t.render(tt[0], dSurface, cam);
+                    }
+                  }
+                  break;
+          // UI
+          case 4: for(int j = 0; j < status.length; j++) {
+                    dSurface.drawText(status[j], Color.white, 10, (j*15) + 40);
+                  }
+                  break;
         }
       }
-      
-      
 
-      
       dSurface.dispose();
       buffer.show();
    }
    
    public void processInput() {
       if(up) {
-         player.setCoord3DZ(player.getCoord3DZ() + 1);
-         cam.setY(cam.getY() + 1);
+        level.setSpeed(0.005f);
+      } else {
+        level.setSpeed(SPEED);
       }
       if(down) {
-         player.setCoord3DZ(player.getCoord3DZ() - 1);
-         cam.setY(cam.getY() - 1);
+        level.setSpeed(0.25f);
+      } else {
+        level.setSpeed(SPEED);
       }
       if(right) {
-        if(player.getCoord3DX() + player.getDimensionW() <= (LEVELWIDTH/2)) {
-          player.setCoord3DX(player.getCoord3DX() + 1);
+        if(tt[0].getCoord3DX() + tt[0].getDimensionW() <= (LEVELWIDTH/2)) {
+          tt[0].setCoord3DX(tt[0].getCoord3DX() + 1);
         }
       }
       if(left) {
-        if(player.getCoord3DX() >= -(LEVELWIDTH/2)) {
-          player.setCoord3DX(player.getCoord3DX() - 1);
+        if(tt[0].getCoord3DX() >= -(LEVELWIDTH/2)) {
+          tt[0].setCoord3DX(tt[0].getCoord3DX() - 1);
         }
       }
    }

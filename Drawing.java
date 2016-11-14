@@ -11,17 +11,18 @@ public class Drawing {
    private Graphics g;
    private Graphics2D g2d;
 
+   private float scale;
+   private float xProj;
+   private float yProj;
+
    private Point2D calc2D;
+   private Point2D calc2D2;
    private Point3D calc3D;
    private Path2D[] polyRect;
-   private Line2D line = new Line2D.Float(0f, 0f, 0f, 0f);
-   private Rectangle2D rect = new Rectangle2D.Float(0f, 0f, 0f, 0f);
+   private Line2D line;
+   private Rectangle2D rect;
    
-   private Color xBG = new Color(4,2,4);
-   private Color xHiCyan = new Color(71,234,253);
-   private Color xHiPink = new Color(231,37,83);
-   private Color xBlack1 = new Color(0x280327);
-   private Color xBlack2 = new Color(0x3F0737);
+   private Color xBG = new Color(57,14,64);
    
    public enum Facing {
       UP, DOWN, LEFT, RIGHT, FORWARD, BACKWARD
@@ -33,6 +34,18 @@ public class Drawing {
       this.g = g;
       this.g2d = g2d;
       c = new Point2D(w/2,h/2);
+
+      calc2D = new Point2D(0,0);
+      calc2D2 = new Point2D(0,0);
+      calc3D = new Point3D(0,0,0);
+
+      polyRect = new Path2D[3];
+      for(int i = 0; i < polyRect.length; i++) {
+         polyRect[i] = new Path2D.Double();
+      }
+
+      line = new Line2D.Float(0f, 0f, 0f, 0f);
+      rect = new Rectangle2D.Float(0f, 0f, 0f, 0f);
    }
 
    public float getScreenWidth() {
@@ -62,9 +75,9 @@ public class Drawing {
    }
 
    public Point2D project(float x, float y, float z, Camera cam, Point2D screen) {
-      float scale = cam.getDistance() / (z - cam.getZ());
-      float xProj = (x - cam.getX()) * scale;
-      float yProj = (y - cam.getY()) * scale;
+      scale = cam.getDistance() / (z - cam.getZ());
+      xProj = (x - cam.getX()) * scale;
+      yProj = (y - cam.getY()) * scale;
       
       screen.setX(c.getX() + c.getX()*xProj);
       screen.setY(c.getY() - c.getY()*yProj);
@@ -81,23 +94,32 @@ public class Drawing {
       g.drawString(text, x, y);
    }
 
-   public void drawLine(Color color, float x1, float y1, float x2, float y2) {
+   public void drawLine2D(Color color, float x1, float y1, float x2, float y2) {
       line.setLine(x1, y1, x2, y2);
       g2d.setColor(color);
       g2d.draw(line);
    }
 
+   public void drawLine3D(Camera cam, Color color, float x1, float y1, float z1, float x2, float y2, float z2) {
+      project(x1,y1,z1,cam,calc2D);
+      project(x2,y2,z2,cam,calc2D2);
+      line.setLine(calc2D.getX(), calc2D.getY(), calc2D2.getX(), calc2D2.getY());
+      g2d.setColor(color);
+      g2d.draw(line);
+   }
+
+   public void drawLine3D(Camera cam, Color color, Point3D p1, Point3D p2) {
+      drawLine3D(cam, color, p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+   }
+
    public void drawPlane(Camera cam, float x, float y, float z, float w, float h, float d, Facing f, Color c, boolean i_wf) {
-      polyRect = new Path2D[1];
-      polyRect[0] = new Path2D.Double();
+      polyRect[0].reset();
       drawRect3D(x, y, z, w, h, d, f, c, i_wf, polyRect[0], cam);     
    }
 
    public void drawCube(Camera cam, float x, float y, float z, float w, float h, float d, Color c1, Color c2, Color c3, boolean i_wf) {
-      polyRect = new Path2D[3];
-
       for(int i = 0; i < 3; i++) {
-         polyRect[i] = new Path2D.Double();
+         polyRect[i].reset();
       }
    
       if(y + h < cam.getY()) {
@@ -121,6 +143,11 @@ public class Drawing {
    public void drawCube(TechnoType p, Camera cam, float w, float h, float d) {
       drawCube(cam, p.getCoord3DX(), p.getCoord3DY(), p.getCoord3DZ(), w, h, d, p.getColor(0), p.getColor(1), p.getColor(2), p.isWireframe());
    }
+
+   public void drawRect2D(Color c, int x, int y, int w, int h) {
+      g.setColor(c);
+      g.fillRect(x, y, w, h);
+   }
    
    public void drawRect3D(float x, float y, float z, float w, float h, float d, Facing f, 
                            Color color, boolean wire, Path2D poly, Camera cam) {
@@ -134,7 +161,6 @@ public class Drawing {
       }
       
       // TODO implement cleaner function
-      calc2D = new Point2D(0,0);
 
       if(f == Facing.UP || f == Facing.DOWN) {
          if(f == Facing.UP) {
