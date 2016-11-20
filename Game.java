@@ -31,7 +31,7 @@ public class Game extends JFrame implements Runnable, KeyListener{
    private Graphics2D g2d;
    private boolean running;
    private boolean inGame = false;
-   private boolean left, right, up, down, jump;
+   private boolean left, right, up, down, jump, pause;
 
    private Camera cam;
    private Level level;
@@ -80,7 +80,8 @@ public class Game extends JFrame implements Runnable, KeyListener{
 
    public void run() {
     // Initialize Objects
-    cam = new Camera(0f,25f,0f,1f);
+    
+    cam = new Camera(0f,50f,5f,1f);  //0 25 0 1
     level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, 25, LAYERS);
     tt = new TechnoType[5];
     tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,pColor,false);
@@ -112,22 +113,28 @@ public class Game extends JFrame implements Runnable, KeyListener{
           lag -= MS_PER_UPDATE;
         }
         render();
+         
+
       }
    }
    
    public void update() {
+     
+     //dustin implemented to test pause
+     if(!PauseMenu.getIsPaused())
+     {
+       // LEVEL
+      level.update(cam);
 
-    // LEVEL
-    level.update(cam);
+      // OBJECTS
+      for(TechnoType t : tt) {
+         t.update(tt[0], level, cam);
+      }
 
-    // OBJECTS
-    for(TechnoType t : tt) {
-      t.update(tt[0], level, cam);
-    }
-
-    // UI
-    status[0] = String.format("Lives: %d", tt[0].getLives());
-    status[1] = String.format("Score: %d", level.getScore());
+      // UI
+      status[0] = String.format("Lives: %d", tt[0].getLives());
+      status[1] = String.format("Score: %d", (int)level.getScore());
+      }
    }
    
    public void render() {
@@ -204,6 +211,19 @@ public class Game extends JFrame implements Runnable, KeyListener{
           tt[0].setCoord3DX(tt[0].getCoord3DX() - 1);
         }
       }
+      if(pause)
+      {
+         PauseMenu.setIsPaused(true);
+         //draw menu here 
+         PauseMenu.drawPauseMenu(dSurface);
+      }else
+       {
+         PauseMenu.setIsPaused(false);
+         //dispose menu here
+         PauseMenu.clearPauseMenu(dSurface);
+       }
+       
+       //will also add here for new game button == pauseMenu.isPaused 
    }
 
    @Override
@@ -218,6 +238,16 @@ public class Game extends JFrame implements Runnable, KeyListener{
        down = true;
     if((k.getKeyCode() == KeyEvent.VK_SPACE))
        jump = true;
+    if((k.getKeyCode() == KeyEvent.VK_CAPS_LOCK))
+        if(pause)
+       {
+         pause = false;
+       }
+       else
+       {
+         pause = true;
+       }
+
    }
 
    @Override
@@ -232,6 +262,16 @@ public class Game extends JFrame implements Runnable, KeyListener{
        down = true;
     if((k.getKeyCode() == KeyEvent.VK_SPACE))
        jump = true;
+    if((k.getKeyCode() == KeyEvent.VK_CAPS_LOCK))
+       if(pause)
+       {
+         pause = false;
+       }
+       else
+       {
+         pause = true;
+       }
+
    }
 
    @Override
