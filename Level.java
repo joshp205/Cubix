@@ -8,7 +8,8 @@ public class Level {
    private float travelDistance;
    private float speed;
 
-   private int score;
+   //dustin did change this to long
+   private long score;
 
    private int layers;
 
@@ -30,7 +31,7 @@ public class Level {
       this.distance = 0;
       this.speed = speed;
 
-      this.score = 0;
+      this.score = System.currentTimeMillis();
 
       this.layers = layers;
 
@@ -60,15 +61,22 @@ public class Level {
    }
 
    public void update(Camera cam) {
-      travelDistance = segmentSize / (segmentSize * speed);
+     
+     //dustin implemented to test pause screen
+      if(!PauseMenu.getIsPaused())
+      {
+         travelDistance = segmentSize / (segmentSize * speed);
+         score = (System.currentTimeMillis() - score) * (long)distance;
+         
 
-      for(int i = 0; i < segments; i++) {
-         segPos[i].setZ(segPos[i].getZ() - travelDistance);
+          for(int i = 0; i < segments; i++) {
+               segPos[i].setZ(segPos[i].getZ() - travelDistance);
 
-         if(segPos[i].getZ() <= -segmentSize) {
-            segPos[i].setZ(segmentSize * (segments - 1));
-         }
-      }
+             if(segPos[i].getZ() <= -segmentSize) {
+                segPos[i].setZ(segmentSize * (segments - 1));
+             }
+          }
+      }  
    }
 
    public void render(Drawing dSurface, Camera cam, int layer) {
@@ -112,7 +120,7 @@ public class Level {
       return speed;
    }
 
-   public int getScore() {
+   public long getScore() {
       return score;
    }
 
@@ -184,7 +192,7 @@ public class Level {
       this.speed = speed;
    }
 
-   public void setScore(int score) {
+   public void setScore(long score) {
       this.score = score;
    }
 
