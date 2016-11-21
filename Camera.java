@@ -1,8 +1,5 @@
 public class Camera extends Point3D{
-   private float x;
-   private float y;
-   private float z;
-   private float distance;
+	private float distance;
 
 	public Camera(float x, float y, float z, float d) {
       super(x,y,z);

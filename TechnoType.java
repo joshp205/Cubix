@@ -3,6 +3,7 @@ import java.awt.Color;
 public class TechnoType{
    private Point3D dimensions;
    private Point3D coords3D;
+   private Point3D rotXYZ;
    private Point2D coords2D;
 
    private int lives;
@@ -21,10 +22,11 @@ public class TechnoType{
       PLAYER, ENEMY, POWERUP
    }
    
-   public TechnoType(Type tType, float x, float y, float z, float w, float h, float d, int[][] rgb, boolean i_wf) {
+   public TechnoType(Type tType, float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ, int[][] rgb, boolean i_wf) {
       this.tType = tType;
       dimensions = new Point3D(w, h, d);
       coords3D = new Point3D(x, y, z);
+      rotXYZ = new Point3D(rotX, rotY, rotZ);
       coords2D = new Point2D(0,0);
 
       if(tType == Type.PLAYER) {
@@ -44,8 +46,8 @@ public class TechnoType{
       wireframe = i_wf;
    }
    
-   public TechnoType(Type tType, Point3D p, Point3D dim, int[][] rgb, boolean i_wf) {
-      this(tType, p.getX(), p.getY(), p.getZ(), dim.getX(), dim.getY(), dim.getZ(), rgb, i_wf);
+   public TechnoType(Type tType, Point3D p, Point3D dim, Point3D rot, int[][] rgb, boolean i_wf) {
+      this(tType, p.getX(), p.getY(), p.getZ(), dim.getX(), dim.getY(), dim.getZ(), rot.getX(), rot.getY(), rot.getZ(), rgb, i_wf);
    }
 
    public void update(TechnoType player, Level level, Camera cam) {
@@ -60,7 +62,7 @@ public class TechnoType{
          } else if(coords3D.getZ() < player.getCoord3DZ() + player.getDimensionD()){
             layer = 3;
             collided = false;
-         } else if(!collided){
+         } else if(!collided && !player.collided){
             layer = 2;
             if(Physics.calculateCollision(this, player)) {
                player.setLives(player.getLives() - 1);
@@ -88,7 +90,7 @@ public class TechnoType{
    }
 
    public void render(TechnoType player, Drawing dSurface, Camera cam) {
-      dSurface.drawCube(this, cam, dimensions.getX(), dimensions.getY(), dimensions.getZ());
+      dSurface.drawCube(this, cam);
    }
 
    public float getDimensionW() {
@@ -117,6 +119,22 @@ public class TechnoType{
    
    public Point3D getCoords3D() {
       return coords3D;
+   }
+
+   public float getRotX() {
+      return rotXYZ.getX();
+   }
+
+   public float getRotY() {
+      return rotXYZ.getY();
+   }
+
+   public float getRotZ() {
+      return rotXYZ.getZ();
+   }
+
+   public Point3D getRotation() {
+      return rotXYZ;
    }
    
    public float getCoord2DX() {
@@ -188,11 +206,33 @@ public class TechnoType{
       coords3D.setY(y);
       coords3D.setZ(z);
    }
-   
+
    public void setCoords3D(Point3D p) {
       setCoords3D(p.getX(),p.getY(),p.getZ());
    }
-   
+
+   public void setRotX(float x) {
+      rotXYZ.setX(x);
+   }
+
+   public void setRotY(float y) {
+      rotXYZ.setY(y);
+   }
+
+   public void setRotZ(float z) {
+      rotXYZ.setZ(z);
+   }
+
+   public void setRotXYZ(float x, float y, float z) {
+      rotXYZ.setX(x);
+      rotXYZ.setY(y);
+      rotXYZ.setZ(z);
+   }
+
+   public void setRotXYZ(Point3D p) {
+      setRotXYZ(p.getX(),p.getY(),p.getZ());
+   }
+
    public void setCoord2DX(float x) {
       coords2D.setX(x);
    }

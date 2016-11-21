@@ -8,7 +8,6 @@ public class Level {
    private float travelDistance;
    private float speed;
 
-   //dustin did change this to long
    private int score;
 
    private int layers;
@@ -31,7 +30,7 @@ public class Level {
       this.distance = 0;
       this.speed = speed;
 
-      this.score = 1500;
+      this.score = 0;
 
       this.layers = layers;
 
@@ -61,32 +60,27 @@ public class Level {
    }
 
    public void update(Camera cam) {
-     
-     //dustin implemented to test pause screen
-      if(!PauseMenu.getIsPaused())
-      {
-         travelDistance = segmentSize / (segmentSize * speed);
-         
-         
+      travelDistance = segmentSize / (segmentSize * speed);
 
-          for(int i = 0; i < segments; i++) {
-               segPos[i].setZ(segPos[i].getZ() - travelDistance);
+      for(int i = 0; i < segments; i++) {
+         segPos[i].setZ(segPos[i].getZ() - travelDistance);
 
-             if(segPos[i].getZ() <= -segmentSize) {
-                segPos[i].setZ(segmentSize * (segments - 1));
-             }
-          }
-      }  
+         if(segPos[i].getZ() <= -segmentSize) {
+            segPos[i].setZ(segmentSize * (segments - 1));
+         }
+      }
    }
 
    public void render(Drawing dSurface, Camera cam, int layer) {
       // BACKGROUND
       if(layer == 0) {
          for(int i = 0; i < segments; i++) {
-            dSurface.drawPlane(cam, getSegmentX(i), getSegmentY(i), getSegmentZ(i), w, h, segmentSize, Drawing.Facing.UP, xColor.lilShift(color[i].getRed(), color[i].getGreen(), color[i].getBlue(), color[i].getAlpha()), false);
+            dSurface.drawPlane(cam, getSegmentX(i), getSegmentY(i), getSegmentZ(i), w, h, segmentSize, 0, 0, 0, Drawing.Facing.UP,
+                                 xColor.lilShift(color[i].getRed(), color[i].getGreen(), color[i].getBlue(), color[i].getAlpha()), false);
          }
          for(int i = 0; i < darkness.length; i++) {
-            dSurface.drawPlane(cam, -w/2, h, segZGrid[segments - (i+1)], w, h, segmentSize, Drawing.Facing.UP, darkness[darkness.length - (i+1)], false);
+            dSurface.drawPlane(cam, -w/2, h, segZGrid[segments - (i+1)], w, h, segmentSize, 0, 0, 0, Drawing.Facing.UP,
+                                 darkness[darkness.length - (i+1)], false);
          }
          return;
       }
@@ -94,7 +88,8 @@ public class Level {
       // FOREGROUND
       if(layer == 2) {
          for(int i = 0; i < darkness.length; i++) {
-            dSurface.drawPlane(cam, -w/2, h, segZGrid[segments - (i+1)], w, 150, segmentSize, Drawing.Facing.BACKWARD, darkness[darkness.length - (i+1)], false);
+            dSurface.drawPlane(cam, -w/2, h, segZGrid[segments - (i+1)], w, 150, segmentSize, 0, 0, 0,  Drawing.Facing.BACKWARD,
+               darkness[darkness.length - (i+1)], false);
          }
          return;
       }
@@ -120,7 +115,7 @@ public class Level {
       return speed;
    }
 
-   public long getScore() {
+   public int getScore() {
       return score;
    }
 

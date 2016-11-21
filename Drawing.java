@@ -112,36 +112,39 @@ public class Drawing {
       drawLine3D(cam, color, p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
    }
 
-   public void drawPlane(Camera cam, float x, float y, float z, float w, float h, float d, Facing f, Color c, boolean i_wf) {
+   public void drawPlane(Camera cam, float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ,
+                           Facing f, Color c, boolean i_wf) {
       polyRect[0].reset();
-      drawRect3D(x, y, z, w, h, d, f, c, i_wf, polyRect[0], cam);     
+      drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, f, c, i_wf, polyRect[0], cam);     
    }
 
-   public void drawCube(Camera cam, float x, float y, float z, float w, float h, float d, Color c1, Color c2, Color c3, boolean i_wf) {
+   public void drawCube(Camera cam, float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ,
+                        Color c1, Color c2, Color c3, boolean i_wf) {
       for(int i = 0; i < 3; i++) {
          polyRect[i].reset();
       }
    
       if(y + h < cam.getY()) {
-         drawRect3D(x, y, z, w, h, d, Facing.UP, c1, i_wf, polyRect[0], cam);
+         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.UP, c1, i_wf, polyRect[0], cam);
       } else if(y > cam.getY()){
-         drawRect3D(x, y, z, w, h, d, Facing.DOWN, c1, i_wf, polyRect[0], cam);
+         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.DOWN, c1, i_wf, polyRect[0], cam);
       }
       
       if(x + w < cam.getX()) {
-         drawRect3D(x, y, z, w, h, d, Facing.RIGHT, c2, i_wf, polyRect[1], cam);
+         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.RIGHT, c2, i_wf, polyRect[1], cam);
 
       } else if(x > cam.getX()){
-         drawRect3D(x, y, z, w, h, d, Facing.LEFT, c2, i_wf, polyRect[1], cam);
+         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.LEFT, c2, i_wf, polyRect[1], cam);
       }
-      
+
       if(z > cam.getZ()) {
-         drawRect3D(x, y, z, w, h, d, Facing.FORWARD, c3, i_wf, polyRect[2], cam);
+         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.FORWARD, c3, i_wf, polyRect[2], cam);
       }
    }
    
-   public void drawCube(TechnoType p, Camera cam, float w, float h, float d) {
-      drawCube(cam, p.getCoord3DX(), p.getCoord3DY(), p.getCoord3DZ(), w, h, d, p.getColor(0), p.getColor(1), p.getColor(2), p.isWireframe());
+   public void drawCube(TechnoType p, Camera cam) {
+      drawCube(cam, p.getCoord3DX(), p.getCoord3DY(), p.getCoord3DZ(), p.getDimensionW(), p.getDimensionH(), p.getDimensionD(),
+               p.getRotX(), p.getRotY(), p.getRotZ(), p.getColor(0), p.getColor(1), p.getColor(2), p.isWireframe());
    }
 
    public void drawRect2D(Color c, int x, int y, int w, int h) {
@@ -149,7 +152,7 @@ public class Drawing {
       g.fillRect(x, y, w, h);
    }
    
-   public void drawRect3D(float x, float y, float z, float w, float h, float d, Facing f, 
+   public void drawRect3D(float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ, Facing f, 
                            Color color, boolean wire, Path2D poly, Camera cam) {
       // Camera Clipping              
       if((z-d) < cam.getZ()) {

@@ -1,4 +1,3 @@
-import java.util.Scanner;
 import java.util.Random;
 import java.util.Arrays;
 
@@ -13,89 +12,93 @@ import java.awt.event.*;
 import java.awt.Color;
 
 public class Game extends JFrame implements Runnable, KeyListener{
-   public final String TITLE = "Quadratfrei";
-   public final int WIDTH = 960;
-   public final int HEIGHT = WIDTH / 4 * 3;
 
-   public final float LEVELWIDTH = 200f;
-   public final float LEVELDEPTH = 1000f;
-   public final float SPEED = 0.025f;
-   public final int LAYERS = 4;
+  // FRAME DATA
+  public final String TITLE = "Quadratfrei";
+  public final int WIDTH = 960;
+  public final int HEIGHT = WIDTH / 4 * 3;
 
-   public final double MS_PER_UPDATE = 60.0;
+  // LEVEL DATA
+  public final float LEVELWIDTH = 200f;
+  public final float LEVELDEPTH = 1000f;
+  public final float SPEED = 0.025f;
+  public final int LAYERS = 4;
+
+  public final double MS_PER_UPDATE = 60.0;
+
+  private Thread thread;
+  private BufferStrategy buffer;
+  private Drawing dSurface;
+  private Graphics g;
+  private Graphics2D g2d;
+  private boolean running, inGame;
+  private boolean left, right, up, down, space, enter, escape;
+
+  private Menu menu;
+  private Camera cam;
+  private Level level;
+  private TechnoType[] tt;
+  private TechnoType player;
+
+  private int[][] pColor = new int[][]{{182,176,238}, {124,80,169}, {91,68,172}};
+  private int[][] eColor = new int[][]{{199,102,42}, {166,50,40}, {112,28,52}};
+  private String[] status = new String[3];
+
+  // Testing variables
+  public Random rand = new Random();
+  public float rot = 0f;
+
+
+  public static void main(String[] args) {
+    Game game = new Game();
+  }
+
+  public Game() {
+    thread = new Thread(this);
     
-   private Thread thread;
-   private BufferStrategy buffer;
-   private Drawing dSurface;
-   private Graphics g;
-   private Graphics2D g2d;
-   private boolean running;
-   private boolean inGame = false;
-   private boolean left, right, up, down, jump, pause, newGame;
+    setSize(WIDTH,HEIGHT);
+    setResizable(false);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setIgnoreRepaint(true);
+    setVisible(true);
 
-   private Camera cam;
-   private Level level;
-   private TechnoType[] tt;
-   private TechnoType player;
+    addKeyListener(this);
+    String[] s = {"New Game","Options","Exit"};
+    menu = new Menu(Menu.MenuType.MAIN, s);
 
-   private int[][] pColor = new int[][]{{182,176,238}, {124,80,169}, {91,68,172}};
-   private int[][] eColor = new int[][]{{199,102,42}, {166,50,40}, {112,28,52}};
-   private String[] status = new String[3];
-   
-   
-   
+    start();
+  }
 
+  private synchronized void start() {
+  	running = true;
+    inGame = false;
+  	thread.start();
+  }
 
-   // Testing variables
-   public Random rand = new Random();
-   
-   
-   public static void main(String[] args) {
-      Game game = new Game();
-   }
-
-   public Game() {
-      thread = new Thread(this);
-      
-      setSize(WIDTH,HEIGHT);
-      setResizable(false);
-      setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-      setIgnoreRepaint(true);
-      setVisible(true);
-
-      addKeyListener(this);
-
-      start();
-   }
-   
-   private synchronized void start() {
-   	running = true;
-   	thread.start();
-   }
-   
-   public synchronized void stop() {
-   	running = false;
-   	try {
-   		thread.join();
-   	} catch(InterruptedException e) {
-   		e.printStackTrace();
-   	}
-   }
+  public synchronized void stop() {
+  	running = false;
+  	try {
+  		thread.join();
+  	} catch(InterruptedException e) {
+  		e.printStackTrace();
+  	}
+  }
 
    public void run() {
     // Initialize Objects
-    
-    cam = new Camera(0f,50f,5f,1f);  //0 25 0 1
+    cam = new Camera(0f,65f,0f,1f);
     level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, 25, LAYERS);
     tt = new TechnoType[5];
-    tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,pColor,false);
+    tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,0,0,0,pColor,false);
 
+    // Placeholder enemies
     for(int i = 1; i < tt.length; i++) {
-      tt[i] = new TechnoType(TechnoType.Type.ENEMY,rand.nextInt((int)LEVELWIDTH) - LEVELWIDTH/2f,0, i*100,15,15,15,eColor,false);
+      tt[i] = new TechnoType(TechnoType.Type.ENEMY,rand.nextInt((int)LEVELWIDTH) - LEVELWIDTH/2f,0, i*100,15,15,15,0,0,0,eColor,false);
     }
 
-    cam.setZ(1f);
     tt[0].setCoord3DZ(110);
+    cam.setZ(1f);
+
     for(int i = 0; i < status.length; i++) {
       status[i] = "x";
     }
@@ -117,30 +120,38 @@ public class Game extends JFrame implements Runnable, KeyListener{
           lag -= MS_PER_UPDATE;
         }
         render();
-         
-
       }
    }
    
    public void update() {
-     
-     //dustin implemented to test pause
-     if(!PauseMenu.getIsPaused())
-     {
-       // LEVEL
+    if(inGame) {
+      // LEVEL
       level.update(cam);
 
       // OBJECTS
       for(TechnoType t : tt) {
-         t.update(tt[0], level, cam);
+        t.update(tt[0], level, cam);
       }
 
       // UI
       status[0] = String.format("Lives: %d", tt[0].getLives());
-      status[1] = String.format("Score: %d", (int)level.getScore());
+      status[1] = String.format("Score: %d", level.getScore());
+    } else {
+      // This "if" check is bullshit, just testing main menu drawing
+      if(menu.getMenuType() == Menu.MenuType.MAIN) {
+        // OBJECTS
+        rot+=0.00025;
+        if(rot >= 360) {
+          rot = 0;
+        }
+        tt[0].setCoord3DX((float)Math.cos(Math.toDegrees(rot)) * (LEVELWIDTH/2));
+        tt[0].update(tt[0], level, cam);
       }
-      
-   }
+
+      // MENU
+      menu.update(WIDTH, HEIGHT);
+    }
+  }
    
    public void render() {
       buffer = getBufferStrategy();
@@ -153,9 +164,10 @@ public class Game extends JFrame implements Runnable, KeyListener{
       g = buffer.getDrawGraphics();
       g2d = (Graphics2D)buffer.getDrawGraphics();
       dSurface = new Drawing(WIDTH,HEIGHT,g,g2d);
-      
 
       dSurface.clearScreen();
+
+      // INGAME
       for(int i = 0; i <= LAYERS; i++) {
         switch(i) {
           // BACKGROUND
@@ -187,25 +199,39 @@ public class Game extends JFrame implements Runnable, KeyListener{
           // UI
           case 4: for(int j = 0; j < status.length; j++) {
                     dSurface.drawText(status[j], Color.white, 10, (j*15) + 40);
-                    
-                    if(PauseMenu.getIsPaused())
-                    {
-                     dSurface.drawText("PAUSED", Color.white, WIDTH /2 , HEIGHT / 2);
-                     dSurface.drawText("n - newgame", Color.white, WIDTH /2 , HEIGHT /2 +20);
-                     
-                    }
                   }
                   break;
         }
       }
 
+      if(!inGame) {
+        menu.render(dSurface);
+      }
+
       dSurface.dispose();
       buffer.show();
    }
+
+   public void newGame() {
+    // Create new objects
+    level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, 25, LAYERS);
+    tt = new TechnoType[5];
+    tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,0,0,0,pColor,false);
+
+    // Placeholder enemies
+    for(int i = 1; i < tt.length; i++) {
+      tt[i] = new TechnoType(TechnoType.Type.ENEMY,rand.nextInt((int)LEVELWIDTH) - LEVELWIDTH/2f,0, i*100,15,15,15,0,0,0,eColor,false);
+    }
+
+    tt[0].setCoord3DZ(110);
+    inGame = true;
+   }
    
    public void processInput() {
+    if(inGame) {
+      // GAME CONTROLS
       if(up) {
-        level.setSpeed(0.005f);
+        level.setSpeed(5f);
       } else {
         level.setSpeed(SPEED);
       }
@@ -224,25 +250,65 @@ public class Game extends JFrame implements Runnable, KeyListener{
           tt[0].setCoord3DX(tt[0].getCoord3DX() - 1);
         }
       }
-      if(pause)
-      {
-         PauseMenu.setIsPaused(true);
-          
-         
-      }else
-       {
-         PauseMenu.setIsPaused(false);
-         
-         
-       
-       }
-      if(newGame)
-      {
-         PauseMenu.newGame(level, tt);
+      if(escape) {
+        escape = false;
+        inGame = false;
+        menu.setMenuType(Menu.MenuType.PAUSE);
       }
-       
-       //will also add here for new game button == pauseMenu.isPaused 
-   }
+    } else {
+      // MENU CONTROLS
+      if(up) {
+        menu.menuUp();
+        up = false;
+      }
+      if(down) {
+        menu.menuDown();
+        down = false;
+      }
+      if(right) {
+
+      }
+      if(left) {
+
+      }
+      if(enter) {
+        int i = menu.getCursorPos();
+        if(menu.getMenuType() == Menu.MenuType.MAIN) {
+          switch(i) {
+            case 0:   newGame();
+                      break;
+            case 1:   break;
+            case 2:   System.exit(0);
+          }
+        }
+        if(menu.getMenuType() == Menu.MenuType.PAUSE) {
+          switch(i) {
+            case 0:   newGame();
+                      break;
+            case 1:   break;
+            case 2:   inGame = true;
+                      menu.setCursorPos(0);
+                      menu.setMenuType(Menu.MenuType.NONE);
+                      break;
+            case 3:   menu.setCursorPos(0);
+                      menu.setMenuType(Menu.MenuType.MAIN);
+                      break;
+          }
+        }
+      }
+      if(escape) {
+        if(menu.getMenuType() == Menu.MenuType.MAIN) {
+          System.exit(0);
+        }
+        if(menu.getMenuType() == Menu.MenuType.PAUSE) {
+          escape = false;
+          inGame = true;
+          menu.setCursorPos(0);
+          menu.setMenuType(Menu.MenuType.NONE);
+        }
+      }
+    }
+  }
 
    @Override
    public void keyTyped(KeyEvent k) {
@@ -255,19 +321,11 @@ public class Game extends JFrame implements Runnable, KeyListener{
     if((k.getKeyCode() == KeyEvent.VK_S))
        down = true;
     if((k.getKeyCode() == KeyEvent.VK_SPACE))
-       jump = true;
-    if((k.getKeyCode() == KeyEvent.VK_CAPS_LOCK))
-        if(pause)
-       {
-         pause = false;
-       }
-       else
-       {
-         pause = true;
-       }
-    if((k.getKeyCode() == KeyEvent.VK_N && pause))
-         newGame = true;
-
+       space = true;
+    if((k.getKeyCode() == KeyEvent.VK_ENTER))
+       enter = true;
+    if((k.getKeyCode() == KeyEvent.VK_ESCAPE))
+       escape = true;
    }
 
    @Override
@@ -281,20 +339,11 @@ public class Game extends JFrame implements Runnable, KeyListener{
     if((k.getKeyCode() == KeyEvent.VK_S))
        down = true;
     if((k.getKeyCode() == KeyEvent.VK_SPACE))
-       jump = true;
-    if((k.getKeyCode() == KeyEvent.VK_CAPS_LOCK))
-       if(pause)
-       {
-         pause = false;
-       }
-       else
-       {
-         pause = true;
-       }
-    if((k.getKeyCode() == KeyEvent.VK_N && pause))
-       newGame = true;
-
-
+       space = true;
+    if((k.getKeyCode() == KeyEvent.VK_ENTER))
+       enter = true;
+    if((k.getKeyCode() == KeyEvent.VK_ESCAPE))
+       escape = true;
    }
 
    @Override
@@ -308,9 +357,10 @@ public class Game extends JFrame implements Runnable, KeyListener{
     if((k.getKeyCode() == KeyEvent.VK_S))
        down = false;
     if((k.getKeyCode() == KeyEvent.VK_SPACE))
-       jump = false;
-    if((k.getKeyCode() == KeyEvent.VK_N && pause))
-         newGame = false;
-
+       space = false;
+    if((k.getKeyCode() == KeyEvent.VK_ENTER))
+       enter = false;
+    if((k.getKeyCode() == KeyEvent.VK_ESCAPE))
+       escape = false;
    }
 }
