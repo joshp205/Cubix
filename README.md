@@ -1,3 +1,3 @@
-# quadratfrei
+# Cubix
 
 It's a game
