@@ -10,8 +10,8 @@ public class Physics {
 		center2.setY(t2.getCoord3DY() + t2.getDimensionH()/2f);
 		center2.setZ(t2.getCoord3DZ() + t2.getDimensionD()/2f);
 		float holder1 = t1.getDimensionW() + t2.getDimensionW();
-		double holder2 = Math.sqrt(Math.pow(center1.getX() - center2.getX(), 2) + Math.pow(center1.getY() - center2.getY(), 2) + Math.pow(center1.getZ() - center2.getZ(), 2));
-		holder2 = holder2 - (double)holder1;
+		float holder2 = xMath.getDistance3D(center1.getX(), center1.getY(), center1.getZ(), center2.getX(), center2.getY(), center2.getZ());
+		holder2 = holder2 - holder1;
 		if(holder2 <= 0) {
          return true;
       } else {

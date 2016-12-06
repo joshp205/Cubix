@@ -14,7 +14,7 @@ import java.awt.Color;
 public class Game extends JFrame implements Runnable, KeyListener{
 
   // FRAME DATA
-  public final String TITLE = "Quadratfrei";
+  public final String TITLE = "Cubix";
   public final int WIDTH = 960;
   public final int HEIGHT = WIDTH / 4 * 3;
 
@@ -34,15 +34,17 @@ public class Game extends JFrame implements Runnable, KeyListener{
   private boolean running, inGame;
   private boolean left, right, up, down, space, enter, escape;
 
-  private Menu menu;
   private Camera cam;
   private Level level;
   private TechnoType[] tt;
-  private TechnoType player;
+  private Menu menu, pauseMenu, optionMenu;
+  private Level.Difficulty difficulty = Level.Difficulty.EASY;
 
-  private int[][] pColor = new int[][]{{182,176,238}, {124,80,169}, {91,68,172}};
-  private int[][] eColor = new int[][]{{199,102,42}, {166,50,40}, {112,28,52}};
+  private int[][] pColor = new int[][]{{182,176,238}, {124,80,169}, {91,68,172}, {182,176,238}, {124,80,169}, {91,68,172}};
+  private int[][] eColor = new int[][]{{199,102,42}, {166,50,40}, {112,28,52}, {199,102,42}, {166,50,40}, {112,28,52}};
   private String[] status = new String[3];
+  private String[][] menuItems =  {{"New Game", "Difficulty", "Exit"}, {"New Game", "Return To Game", "Exit To Main Menu"},
+                                  {"Easy", "Medium", "Hard", "Extreme", "Go Back"}};
 
   // Testing variables
   public Random rand = new Random();
@@ -56,6 +58,7 @@ public class Game extends JFrame implements Runnable, KeyListener{
   public Game() {
     thread = new Thread(this);
     
+    setTitle(TITLE);
     setSize(WIDTH,HEIGHT);
     setResizable(false);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -63,8 +66,7 @@ public class Game extends JFrame implements Runnable, KeyListener{
     setVisible(true);
 
     addKeyListener(this);
-    String[] s = {"New Game","Options","Exit"};
-    menu = new Menu(Menu.MenuType.MAIN, s);
+    menu = new Menu(Menu.MenuType.MAIN, menuItems);
 
     start();
   }
@@ -87,7 +89,7 @@ public class Game extends JFrame implements Runnable, KeyListener{
    public void run() {
     // Initialize Objects
     cam = new Camera(0f,65f,0f,1f);
-    level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, 25, LAYERS);
+    level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, difficulty, 25, LAYERS);
     tt = new TechnoType[5];
     tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,0,0,0,pColor,false);
 
@@ -127,6 +129,7 @@ public class Game extends JFrame implements Runnable, KeyListener{
     if(inGame) {
       // LEVEL
       level.update(cam);
+      level.setScore(level.getScore() + 1);
 
       // OBJECTS
       for(TechnoType t : tt) {
@@ -137,16 +140,14 @@ public class Game extends JFrame implements Runnable, KeyListener{
       status[0] = String.format("Lives: %d", tt[0].getLives());
       status[1] = String.format("Score: %d", level.getScore());
     } else {
-      // This "if" check is bullshit, just testing main menu drawing
-      if(menu.getMenuType() == Menu.MenuType.MAIN) {
-        // OBJECTS
-        rot+=0.00025;
-        if(rot >= 360) {
-          rot = 0;
-        }
-        tt[0].setCoord3DX((float)Math.cos(Math.toDegrees(rot)) * (LEVELWIDTH/2));
-        tt[0].update(tt[0], level, cam);
+
+      // OBJECTS
+      rot+=0.00025;
+      if(rot >= 360) {
+        rot = 0;
       }
+      tt[0].setCoord3DX((float)Math.cos(Math.toDegrees(rot)) * (LEVELWIDTH/2));
+      tt[0].update(tt[0], level, cam);
 
       // MENU
       menu.update(WIDTH, HEIGHT);
@@ -213,18 +214,23 @@ public class Game extends JFrame implements Runnable, KeyListener{
    }
 
    public void newGame() {
-    // Create new objects
-    level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, 25, LAYERS);
-    tt = new TechnoType[5];
-    tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,0,0,0,pColor,false);
+    // LEVEL CREATION
+    level = new Level(LEVELWIDTH, 0f, LEVELDEPTH, SPEED, difficulty, 25, LAYERS);
 
-    // Placeholder enemies
+    // OBJECT CREATION
+    tt = new TechnoType[difficulty.getEnemies() + 1];
+    tt[0] = new TechnoType(TechnoType.Type.PLAYER,0,0,45,15,15,15,0,0,0,pColor,false);
     for(int i = 1; i < tt.length; i++) {
       tt[i] = new TechnoType(TechnoType.Type.ENEMY,rand.nextInt((int)LEVELWIDTH) - LEVELWIDTH/2f,0, i*100,15,15,15,0,0,0,eColor,false);
     }
 
     tt[0].setCoord3DZ(110);
     inGame = true;
+   }
+
+   public void endGame() {
+    inGame = false;
+
    }
    
    public void processInput() {
@@ -266,10 +272,10 @@ public class Game extends JFrame implements Runnable, KeyListener{
         down = false;
       }
       if(right) {
-
+        right = false;
       }
       if(left) {
-
+        left = false;
       }
       if(enter) {
         int i = menu.getCursorPos();
@@ -277,7 +283,8 @@ public class Game extends JFrame implements Runnable, KeyListener{
           switch(i) {
             case 0:   newGame();
                       break;
-            case 1:   break;
+            case 1:   menu.setMenuType(Menu.MenuType.OPTIONS);
+                      break;
             case 2:   System.exit(0);
           }
         }
@@ -285,27 +292,47 @@ public class Game extends JFrame implements Runnable, KeyListener{
           switch(i) {
             case 0:   newGame();
                       break;
-            case 1:   break;
-            case 2:   inGame = true;
-                      menu.setCursorPos(0);
+            case 1:   inGame = true;
                       menu.setMenuType(Menu.MenuType.NONE);
                       break;
-            case 3:   menu.setCursorPos(0);
-                      menu.setMenuType(Menu.MenuType.MAIN);
+            case 2:   menu.setMenuType(Menu.MenuType.MAIN);
+                      endGame();
                       break;
           }
         }
+        if(menu.getMenuType() == Menu.MenuType.OPTIONS) {
+          switch(i) {
+            case 0: difficulty = Level.Difficulty.EASY;
+                    break;
+            case 1: difficulty = Level.Difficulty.MEDIUM;
+                    break;
+            case 2: difficulty = Level.Difficulty.HARD;
+                    break;
+            case 3: difficulty = Level.Difficulty.EXTREME;
+                    break;
+            case 4: menu.setMenuType(Menu.MenuType.MAIN);
+                    break;
+          }
+        }
+        enter = false;
       }
       if(escape) {
         if(menu.getMenuType() == Menu.MenuType.MAIN) {
           System.exit(0);
         }
         if(menu.getMenuType() == Menu.MenuType.PAUSE) {
-          escape = false;
           inGame = true;
-          menu.setCursorPos(0);
           menu.setMenuType(Menu.MenuType.NONE);
         }
+        if(menu.getMenuType() == Menu.MenuType.OPTIONS) {
+          if(menu.getParentMenu() == Menu.MenuType.MAIN) {
+            menu.setMenuType(Menu.MenuType.MAIN);
+
+          } else if(menu.getParentMenu() == Menu.MenuType.PAUSE) {
+            menu.setMenuType(Menu.MenuType.PAUSE);
+          }
+        }
+        escape = false;
       }
     }
   }

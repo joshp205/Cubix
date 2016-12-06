@@ -1,30 +1,35 @@
 public class Point2D {
-   private float x;
-   private float y;
+   private float[] xy;
    
    public Point2D(float x, float y) {
-      this.x = x;
-      this.y = y;
+      xy = new float[2];
+      xy[0] = x;
+      xy[1] = y;
    }
-   
-   public void setX(float x) {
-      this.x = x;
-   }
-   
-   public void setY(float y) {
-      this.y = y;
-   }
-   
+
    public float getX() {
-      return x;
+      return xy[0];
    }
    
    public float getY() {
-      return y;
+      return xy[1];
+   }
+   
+   public void setX(float x) {
+      xy[0] = x;
+   }
+   
+   public void setY(float y) {
+      xy[1] = y;
+   }
+
+   public void setPoint(Point2D p) {
+      setX(p.getX());
+      setY(p.getY());
    }
    
    @Override
    public String toString() {
-      return "(" + x + "," + y + ")";
+      return "(" + xy[0] + "," + xy[1] + ")";
    }
 }

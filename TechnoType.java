@@ -1,9 +1,7 @@
 import java.awt.Color;
 
 public class TechnoType{
-   private Point3D dimensions;
-   private Point3D coords3D;
-   private Point3D rotXYZ;
+   private Point3D[] coords3D;
    private Point2D coords2D;
 
    private int lives;
@@ -23,11 +21,12 @@ public class TechnoType{
    }
    
    public TechnoType(Type tType, float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ, int[][] rgb, boolean i_wf) {
-      this.tType = tType;
-      dimensions = new Point3D(w, h, d);
-      coords3D = new Point3D(x, y, z);
-      rotXYZ = new Point3D(rotX, rotY, rotZ);
+      Point3D[] temp = {new Point3D(x, y, z), new Point3D(x, y, z), new Point3D(w, h, d), new Point3D(rotX, rotY, rotZ), new Point3D(0,0,0)};
+      temp[4] = xMath.getCenter3D(temp[0], temp[2]);
+      coords3D = temp;
       coords2D = new Point2D(0,0);
+
+      this.tType = tType;
 
       if(tType == Type.PLAYER) {
          layer = 2;
@@ -51,17 +50,21 @@ public class TechnoType{
    }
 
    public void update(TechnoType player, Level level, Camera cam) {
-      if(tType == Type.ENEMY || tType == Type.POWERUP) {
-         coords3D.setZ(coords3D.getZ() - level.getTravelDistance());
-         if(coords3D.getZ() < cam.getZ()) {
-            coords3D.setZ(level.getDepth());
-         }
+      setPrevCoords3D(getCoords3D());
+      setCenter(xMath.getCenter3D(getCoords3D(), getDimensions()));
 
-         if(coords3D.getZ() > level.getSegZGrid(level.getSegments() - level.getDarkSegments())) {
+      if(tType == Type.ENEMY || tType == Type.POWERUP) {
+         setCoord3DZ(getCoord3DZ() - level.getTravelDistance());
+
+         if(getCoord3DZ() > level.getSegZGrid(level.getSegments() - level.getDarkSegments())) {
             layer = 1;
-         } else if(coords3D.getZ() < player.getCoord3DZ() + player.getDimensionD()){
+         } else if(getCoord3DZ() < player.getCoord3DZ() + player.getDimensionD()){
             layer = 3;
             collided = false;
+            if(getCoord3DZ() < cam.getZ()) {
+               layer = 1;
+               setCoord3DZ(level.getDepth());
+            }
          } else if(!collided && !player.collided){
             layer = 2;
             if(Physics.calculateCollision(this, player)) {
@@ -93,48 +96,84 @@ public class TechnoType{
       dSurface.drawCube(this, cam);
    }
 
-   public float getDimensionW() {
-      return dimensions.getX();
-   }
-
-   public float getDimensionH() {
-      return dimensions.getY();
-   }
-
-   public float getDimensionD() {
-      return dimensions.getZ();
-   }
-   
    public float getCoord3DX() {
-      return coords3D.getX();
+      return coords3D[0].getX();
    }
    
    public float getCoord3DY() {
-      return coords3D.getY();
+      return coords3D[0].getY();
    }
    
    public float getCoord3DZ() {
-      return coords3D.getZ();
+      return coords3D[0].getZ();
    }
    
    public Point3D getCoords3D() {
-      return coords3D;
+      return coords3D[0];
+   }
+
+   public float getPrevCoord3DX() {
+      return coords3D[1].getX();
+   }
+
+   public float getPrevCoord3DY() {
+      return coords3D[1].getY();
+   }
+
+   public float getPrevCoord3DZ() {
+      return coords3D[1].getZ();
+   }
+
+   public Point3D getPrevCoords3D() {
+      return coords3D[1];
+   }
+
+   public float getDimensionW() {
+      return coords3D[2].getX();
+   }
+
+   public float getDimensionH() {
+      return coords3D[2].getY();
+   }
+
+   public float getDimensionD() {
+      return coords3D[2].getZ();
+   }
+
+   public Point3D getDimensions() {
+      return coords3D[2];
    }
 
    public float getRotX() {
-      return rotXYZ.getX();
+      return coords3D[3].getX();
    }
 
    public float getRotY() {
-      return rotXYZ.getY();
+      return coords3D[3].getY();
    }
 
    public float getRotZ() {
-      return rotXYZ.getZ();
+      return coords3D[3].getZ();
    }
 
    public Point3D getRotation() {
-      return rotXYZ;
+      return coords3D[3];
+   }
+
+   public float getCenterX() {
+      return coords3D[4].getX();
+   }
+
+   public float getCenterY() {
+      return coords3D[4].getY();
+   }
+
+   public float getCenterZ() {
+      return coords3D[4].getZ();
+   }
+
+   public Point3D getCenter() {
+      return coords3D[4];
    }
    
    public float getCoord2DX() {
@@ -157,6 +196,10 @@ public class TechnoType{
       return layer;
    }
 
+   public Color[] getColors() {
+      return color;
+   }
+
    public Color getColor(int index) {
       return color[index];
    }
@@ -177,60 +220,104 @@ public class TechnoType{
       return wireframe;
    }
 
-   public void setDimensionW(float w) {
-      dimensions.setX(w);
-   }
-
-   public void setDimensionH(float h) {
-      dimensions.setY(h);
-   }
-
-   public void setDimensionD(float d) {
-      dimensions.setZ(d);
-   }
-   
    public void setCoord3DX(float x) {
-      coords3D.setX(x);
+      coords3D[0].setX(x);
    }
    
    public void setCoord3DY(float y) {
-      coords3D.setY(y);
+      coords3D[0].setY(y);
    }
    
    public void setCoord3DZ(float z) {
-      coords3D.setZ(z);
+      coords3D[0].setZ(z);
    }
    
    public void setCoords3D(float x, float y, float z) {
-      coords3D.setX(x);
-      coords3D.setY(y);
-      coords3D.setZ(z);
+      coords3D[0].setX(x);
+      coords3D[0].setY(y);
+      coords3D[0].setZ(z);
    }
 
    public void setCoords3D(Point3D p) {
       setCoords3D(p.getX(),p.getY(),p.getZ());
    }
 
+   public void setPrevCoord3DX(float x) {
+      coords3D[1].setX(x);
+   }
+   
+   public void setPrevCoord3DY(float y) {
+      coords3D[1].setY(y);
+   }
+   
+   public void setPrevCoord3DZ(float z) {
+      coords3D[1].setZ(z);
+   }
+   
+   public void setPrevCoords3D(float x, float y, float z) {
+      coords3D[1].setX(x);
+      coords3D[1].setY(y);
+      coords3D[1].setZ(z);
+   }
+
+   public void setPrevCoords3D(Point3D p) {
+      setCoords3D(p.getX(),p.getY(),p.getZ());
+   }
+
+   public void setDimensionW(float w) {
+      coords3D[2].setX(w);
+   }
+
+   public void setDimensionH(float h) {
+      coords3D[2].setY(h);
+   }
+
+   public void setDimensionD(float d) {
+      coords3D[2].setZ(d);
+   }
+
    public void setRotX(float x) {
-      rotXYZ.setX(x);
+      coords3D[3].setX(x);
    }
 
    public void setRotY(float y) {
-      rotXYZ.setY(y);
+      coords3D[3].setY(y);
    }
 
    public void setRotZ(float z) {
-      rotXYZ.setZ(z);
+      coords3D[3].setZ(z);
    }
 
-   public void setRotXYZ(float x, float y, float z) {
-      rotXYZ.setX(x);
-      rotXYZ.setY(y);
-      rotXYZ.setZ(z);
+   public void setRotation(float x, float y, float z) {
+      coords3D[3].setX(x);
+      coords3D[3].setY(y);
+      coords3D[3].setZ(z);
    }
 
-   public void setRotXYZ(Point3D p) {
-      setRotXYZ(p.getX(),p.getY(),p.getZ());
+   public void setRotation(Point3D p) {
+      setRotation(p.getX(),p.getY(),p.getZ());
+   }
+
+   public void setCenterX(float x) {
+      coords3D[4].setX(x);
+   }
+
+   public void setCenterY(float y) {
+      coords3D[4].setY(y);
+   }
+
+   public void setCenterZ(float z) {
+      coords3D[4].setZ(z);
+   }
+
+   public void setCenter(float x, float y, float z) {
+      coords3D[4].setX(x);
+      coords3D[4].setY(y);
+      coords3D[4].setZ(z);
+   }
+
+   public void setCenter(Point3D p) {
+      setCenter(p.getX(),p.getY(),p.getZ());
    }
 
    public void setCoord2DX(float x) {

@@ -9,6 +9,7 @@ public class Level {
    private float speed;
 
    private int score;
+   private Difficulty difficulty;
 
    private int layers;
 
@@ -22,8 +23,46 @@ public class Level {
    private float segmentSize;
    private Point3D[] segPos;
    private float[] segZGrid;
+   private Point3D calc3D;
+   private Point3D calc3D2;
+   private Point3D pZero;
 
-   public Level(float w, float h, float d, float speed, int segments, int layers) {
+   public enum Difficulty {
+      EASY (0, 5, 15, 5, 0.25f), MEDIUM (1, 8, 15, 5, 0.25f), HARD (2, 10, 15, 5, 0.25f), EXTREME (3, 15, 15, 5, 0.25f);
+
+      private int id;
+      private int enemies, powerups, powerdowns;
+      private float speedMod;
+
+      Difficulty(int id, int enemies, int powerups, int powerdowns, float speedMod) {
+         this.id = id;
+         this.enemies = enemies;
+         this.powerups = powerups;
+         this.powerdowns = powerdowns;
+         this.speedMod = speedMod;
+      }
+      public int getID() {
+         return id;
+      }
+
+      public int getEnemies() {
+         return enemies;
+      }
+
+      public int getPowerups() {
+         return powerups;
+      }
+
+      public int getPowerdowns() {
+         return powerdowns;
+      }
+
+      public float getSpeedMod() {
+         return speedMod;
+      }
+   }
+
+   public Level(float w, float h, float d, float speed, Difficulty difficulty, int segments, int layers) {
       this.w = w;
       this.h = h;
       this.d = d;
@@ -31,6 +70,7 @@ public class Level {
       this.speed = speed;
 
       this.score = 0;
+      this.difficulty = difficulty;
 
       this.layers = layers;
 
@@ -39,6 +79,9 @@ public class Level {
       this.segmentSize = d/(float)segments;
       this.segPos = new Point3D[segments];
       this.segZGrid = new float[segments];
+      calc3D = new Point3D(0,0,0);
+      calc3D2 = new Point3D(0,0,0);
+      pZero = new Point3D(0,0,0);
 
       for(int i = 0; i < segments; i++) {
          segPos[i] = new Point3D(0,0,0);
