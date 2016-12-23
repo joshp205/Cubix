@@ -17,7 +17,7 @@ public class TechnoType{
    
    
    public enum Type {
-      PLAYER, ENEMY, POWERUP
+      PLAYER, ENEMY, POWERUP, NONE
    }
    
    public TechnoType(Type tType, float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ, int[][] rgb, boolean i_wf) {
@@ -40,7 +40,7 @@ public class TechnoType{
       
       color = new Color[rgb.length];
       for(int i = 0; i < color.length; i++) {
-         color[i] = new Color(rgb[i][0], rgb[i][1], rgb[i][2]);
+         color[i] = new Color(rgb[i][0], rgb[i][1], rgb[i][2], rgb[i][3]);
       }
       wireframe = i_wf;
    }

@@ -21,7 +21,7 @@ public class Game extends JFrame implements Runnable, KeyListener{
   // LEVEL DATA
   public final float LEVELWIDTH = 200f;
   public final float LEVELDEPTH = 1000f;
-  public final float SPEED = 0.025f;
+  public final float SPEED = 0.07f;
   public final int LAYERS = 4;
 
   public final double MS_PER_UPDATE = 60.0;
@@ -37,11 +37,11 @@ public class Game extends JFrame implements Runnable, KeyListener{
   private Camera cam;
   private Level level;
   private TechnoType[] tt;
-  private Menu menu, pauseMenu, optionMenu;
+  private Menu menu;
   private Level.Difficulty difficulty = Level.Difficulty.EASY;
 
-  private int[][] pColor = new int[][]{{182,176,238}, {124,80,169}, {91,68,172}, {182,176,238}, {124,80,169}, {91,68,172}};
-  private int[][] eColor = new int[][]{{199,102,42}, {166,50,40}, {112,28,52}, {199,102,42}, {166,50,40}, {112,28,52}};
+  private int[][] pColor = new int[][]{{182,176,238,255}, {124,80,169,255}, {91,68,172,45}, {255,0,0,45}, {0,255,0,45}, {0,0,255,45}};
+  private int[][] eColor = new int[][]{{199,102,42,255}, {166,50,40,255}, {112,28,52,255}, {199,102,42,255}, {166,50,40,255}, {112,28,52,255}};
   private String[] status = new String[3];
   private String[][] menuItems =  {{"New Game", "Difficulty", "Exit"}, {"New Game", "Return To Game", "Exit To Main Menu"},
                                   {"Easy", "Medium", "Hard", "Extreme", "Go Back"}};
@@ -140,17 +140,22 @@ public class Game extends JFrame implements Runnable, KeyListener{
       status[0] = String.format("Lives: %d", tt[0].getLives());
       status[1] = String.format("Score: %d", level.getScore());
     } else {
-
-      // OBJECTS
-      rot+=0.00025;
-      if(rot >= 360) {
-        rot = 0;
+      // MAIN MENU
+      if(menu.getMenuType() == Menu.MenuType.MAIN || menu.getMenuType() == Menu.MenuType.OPTIONS) {
+        // OBJECTS
+        rot+=0.00025;
+        if(rot >= 360) {
+          rot = 0;
+        }
+        tt[0].setCoord3DX((float)Math.cos(Math.toDegrees(rot)) * (LEVELWIDTH/2));
+        tt[0].setRotX(rot);
+        tt[0].setRotY(rot);
+        tt[0].setRotZ(rot);
+        tt[0].update(tt[0], level, cam);
       }
-      tt[0].setCoord3DX((float)Math.cos(Math.toDegrees(rot)) * (LEVELWIDTH/2));
-      tt[0].update(tt[0], level, cam);
 
       // MENU
-      menu.update(WIDTH, HEIGHT);
+      menu.update(WIDTH, HEIGHT, rot);
     }
   }
    
@@ -206,7 +211,7 @@ public class Game extends JFrame implements Runnable, KeyListener{
       }
 
       if(!inGame) {
-        menu.render(dSurface);
+        menu.render(dSurface, cam);
       }
 
       dSurface.dispose();
@@ -237,14 +242,8 @@ public class Game extends JFrame implements Runnable, KeyListener{
     if(inGame) {
       // GAME CONTROLS
       if(up) {
-        level.setSpeed(5f);
-      } else {
-        level.setSpeed(SPEED);
       }
       if(down) {
-        level.setSpeed(0.25f);
-      } else {
-        level.setSpeed(SPEED);
       }
       if(right) {
         if(tt[0].getCoord3DX() + tt[0].getDimensionW() <= (LEVELWIDTH/2)) {

@@ -4,6 +4,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Color;
 
+import java.util.Random;
+import java.util.Arrays;
+import java.util.Collections;
+
 public class Drawing {
    private int w;
    private int h;
@@ -18,14 +22,36 @@ public class Drawing {
    private Point2D calc2D;
    private Point2D calc2D2;
    private Point3D calc3D;
+   private Point3D[][] rectMatrix;
    private Path2D[] polyRect;
    private Line2D line;
    private Rectangle2D rect;
+   private Facing f;
+   private float[] zDepth;
    
    private Color xBG = new Color(57,14,64);
    
    public enum Facing {
-      UP, DOWN, LEFT, RIGHT, FORWARD, BACKWARD
+      UP (0), DOWN (1), RIGHT (2), LEFT (3), FORWARD (4), BACKWARD (5);
+
+      private int id;
+
+      Facing(int id) {
+         this.id = id;
+      }
+
+      public static Facing getFacing(int index) {
+         for(Facing f : Facing.values()) {
+            if(f.getID() == index) {
+               return f;
+            }
+         }
+         return Facing.UP;
+      }
+
+      public int getID() {
+         return id;
+      }
    }
 
    public Drawing(int w, int h, Graphics g, Graphics2D g2d) {
@@ -39,7 +65,16 @@ public class Drawing {
       calc2D2 = new Point2D(0,0);
       calc3D = new Point3D(0,0,0);
 
-      polyRect = new Path2D[3];
+      zDepth = new float[6];
+
+      rectMatrix = new Point3D[6][4];
+      for(int i = 0; i < rectMatrix.length; i++) {
+         for(int j = 0; j < rectMatrix[i].length; j++) {
+            rectMatrix[i][j] = new Point3D(0,0,0);
+         }
+      }
+
+      polyRect = new Path2D[6];
       for(int i = 0; i < polyRect.length; i++) {
          polyRect[i] = new Path2D.Double();
       }
@@ -94,6 +129,11 @@ public class Drawing {
       g.drawString(text, x, y);
    }
 
+   public void drawText(String text, Color color, float x, float y) {
+      g2d.setColor(color);
+      g2d.drawString(text, x, y);
+   }
+
    public void drawLine2D(Color color, float x1, float y1, float x2, float y2) {
       line.setLine(x1, y1, x2, y2);
       g2d.setColor(color);
@@ -112,154 +152,81 @@ public class Drawing {
       drawLine3D(cam, color, p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
    }
 
-   public void drawPlane(Camera cam, float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ,
-                           Facing f, Color c, boolean i_wf) {
+   public void drawPlane(Camera cam, Point3D p, Point3D dim, Point3D rot, Point3D piv, Facing f, Color c, boolean i_wf) {
+      // Camera Clipping 
+      calc3D.setPoint(dim);             
+      if((p.getZ()-dim.getZ()) < cam.getZ()) {
+         if(p.getZ() < cam.getZ()) {
+            return;
+         } else {
+            calc3D.setZ(p.getZ() - (cam.getZ() + cam.getDistance()));
+         }
+      }
+
       polyRect[0].reset();
-      drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, f, c, i_wf, polyRect[0], cam);     
+      xGeom.traceRect3D(rectMatrix, 0, p, calc3D, f);
+      drawPoly3D(rectMatrix[0], polyRect[0], c, i_wf, cam);
    }
 
-   public void drawCube(Camera cam, float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ,
-                        Color c1, Color c2, Color c3, boolean i_wf) {
-      for(int i = 0; i < 3; i++) {
+   public void drawCube(Camera cam, Point3D p, Point3D dim, Point3D rot, Point3D piv, Color[] color, boolean i_wf) {
+      // Camera Clipping       
+      calc3D.setPoint(dim);        
+      if((p.getZ()-dim.getZ()) < cam.getZ()) {
+         if(p.getZ() < cam.getZ()) {
+            return;
+         } else {
+            calc3D.setZ(p.getZ() - (cam.getZ() + cam.getDistance()));
+         }
+      }
+
+      // Flush poly path
+      for(int i = 0; i < polyRect.length; i++) {
          polyRect[i].reset();
       }
-   
-      if(y + h < cam.getY()) {
-         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.UP, c1, i_wf, polyRect[0], cam);
-      } else if(y > cam.getY()){
-         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.DOWN, c1, i_wf, polyRect[0], cam);
-      }
-      
-      if(x + w < cam.getX()) {
-         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.RIGHT, c2, i_wf, polyRect[1], cam);
 
-      } else if(x > cam.getX()){
-         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.LEFT, c2, i_wf, polyRect[1], cam);
-      }
-
-      if(z > cam.getZ()) {
-         drawRect3D(x, y, z, w, h, d, rotX, rotY, rotZ, Facing.FORWARD, c3, i_wf, polyRect[2], cam);
+      // Generate coordinates, rotate, and draw
+      for(int i = 0; i < rectMatrix.length; i++) {
+         f = Facing.getFacing(i);
+         xGeom.traceRect3D(rectMatrix, i, p, calc3D, f);
+         if(rot.getX() != 0 || rot.getY() != 0 || rot.getZ() != 0) {
+            for(int j = 0; j < rectMatrix[i].length; j++) {
+               rectMatrix[i][j].sub(piv);
+               rectMatrix[i][j].setPoint(xMath.rotateX(rectMatrix[i][j], rot.getX()));
+               rectMatrix[i][j].setPoint(xMath.rotateY(rectMatrix[i][j], rot.getY()));
+               rectMatrix[i][j].setPoint(xMath.rotateZ(rectMatrix[i][j], rot.getZ()));
+               rectMatrix[i][j].add(piv);
+            }
+         }
+         drawPoly3D(rectMatrix[i], polyRect[i], color[i], i_wf, cam);
       }
    }
    
    public void drawCube(TechnoType p, Camera cam) {
-      drawCube(cam, p.getCoord3DX(), p.getCoord3DY(), p.getCoord3DZ(), p.getDimensionW(), p.getDimensionH(), p.getDimensionD(),
-               p.getRotX(), p.getRotY(), p.getRotZ(), p.getColor(0), p.getColor(1), p.getColor(2), p.isWireframe());
+      drawCube(cam, p.getCoords3D(), p.getDimensions(), p.getRotation(), p.getCenter(), p.getColors(), p.isWireframe());
    }
 
    public void drawRect2D(Color c, int x, int y, int w, int h) {
       g.setColor(c);
       g.fillRect(x, y, w, h);
    }
-   
-   public void drawRect3D(float x, float y, float z, float w, float h, float d, float rotX, float rotY, float rotZ, Facing f, 
-                           Color color, boolean wire, Path2D poly, Camera cam) {
-      // Camera Clipping              
-      if((z-d) < cam.getZ()) {
-         if(z < cam.getZ()) {
-            return;
-         } else {
-            d = z - (cam.getZ() + cam.getDistance());
-         }
-      }
-      
-      // TODO implement cleaner function
 
-      if(f == Facing.UP || f == Facing.DOWN) {
-         if(f == Facing.UP) {
-            y+=h;
+   public void drawPoly3D(Point3D[] p, Path2D poly, Color color, boolean wire, Camera cam) {
+      for(int i = 0; i < p.length; i++) {
+         project(p[i], cam, calc2D);
+         if(i == 0) {
+            poly.moveTo(calc2D.getX(),calc2D.getY());
+         } else {
+            poly.lineTo(calc2D.getX(),calc2D.getY());
          }
+      }
 
-         for(int i = 0; i < 4; i++) {
-            switch(i) {
-               case 0:  project(x,y,z,cam,calc2D);
-                        poly.moveTo(calc2D.getX(),calc2D.getY());  
-                        break;
-               case 1:  project(x + w,y,z,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-               case 2:  project(x + w,y,z - d,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-               case 3:  project(x,y,z - d,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-            }
-         }
-         
-         poly.closePath();
-         g2d.setColor(color);
-         if(wire != true) {
-            g2d.fill(poly);
-         } else {
-            g2d.draw(poly);
-         }
-         
-         return;
+      poly.closePath();
+      g2d.setColor(color);
+      if(wire) {
+         g2d.draw(poly);
+      } else {
+         g2d.fill(poly);
       }
-      
-      if(f == Facing.LEFT || f == Facing.RIGHT) {
-         if(f == Facing.RIGHT) {
-            x+=w;
-         }
-         for(int i = 0; i < 4; i++) {
-            switch(i) {
-               case 0:  project(x,y,z,cam,calc2D);
-                        poly.moveTo(calc2D.getX(),calc2D.getY());  
-                        break;
-               case 1:  project(x,y + h,z,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-               case 2:  project(x,y + h,z - d,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-               case 3:  project(x,y,z - d,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-            }
-         }
-         
-         poly.closePath();
-         g2d.setColor(color);
-         if(wire != true) {
-            g2d.fill(poly);
-         } else {
-            g2d.draw(poly);
-         }
-         
-         return;
-      }
-      
-      if(f == Facing.FORWARD || f == Facing.BACKWARD) {
-         if(f == Facing.FORWARD) {
-            z-=d;
-         }
-         for(int i = 0; i < 4; i++) {
-            switch(i) {
-               case 0:  project(x,y,z,cam,calc2D);
-                        poly.moveTo(calc2D.getX(),calc2D.getY());  
-                        break;
-               case 1:  project(x,y + h,z,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-               case 2:  project(x + w,y + h,z,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-               case 3:  project(x + w,y,z,cam,calc2D);
-                        poly.lineTo(calc2D.getX(),calc2D.getY());
-                        break;
-            }
-         }
-         
-         poly.closePath();
-         g2d.setColor(color);
-         if(wire != true) {
-            g2d.fill(poly);
-         } else {
-            g2d.draw(poly);
-         }
-         
-         return;
-      }
+
    }
 }

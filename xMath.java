@@ -1,27 +1,31 @@
 public class xMath {
 
-	private static Point3D calc3D = new Point3D(0,0,0);
-	private static float[] temp = new float[2];
-
-	public static void rotateX(Point3D p, float theta) {
-		p.setZ(p.getZ() * (float)Math.cos(Math.toDegrees(theta)) - p.getY() * (float)Math.sin(Math.toDegrees(theta)));
-		p.setY(p.getZ() * (float)Math.sin(Math.toDegrees(theta)) + p.getY() * (float)Math.cos(Math.toDegrees(theta)));
+	public static Point3D rotateX(Point3D p, float theta) {
+		Point3D calc3D = new Point3D(p);
+		calc3D.setZ(p.getY() * (float)Math.cos(Math.toDegrees(theta)) - p.getZ() * (float)Math.sin(Math.toDegrees(theta)));
+		calc3D.setY(p.getY() * (float)Math.sin(Math.toDegrees(theta)) + p.getZ() * (float)Math.cos(Math.toDegrees(theta)));
+		calc3D.setX(p.getX());
+		return calc3D;
 	}
 
-	public static void rotateY(Point3D p, float theta) {
-		p.setX(p.getX() * (float)Math.cos(Math.toDegrees(theta)) - p.getZ() * (float)Math.sin(Math.toDegrees(theta)));
-		p.setZ(p.getX() * (float)Math.sin(Math.toDegrees(theta)) + p.getZ() * (float)Math.cos(Math.toDegrees(theta)));
+	public static Point3D rotateY(Point3D p, float theta) {
+		Point3D calc3D = new Point3D(p);
+		calc3D.setX(p.getZ() * (float)Math.cos(Math.toDegrees(theta)) - p.getX() * (float)Math.sin(Math.toDegrees(theta)));
+		calc3D.setZ(p.getZ() * (float)Math.sin(Math.toDegrees(theta)) + p.getX() * (float)Math.cos(Math.toDegrees(theta)));
+		calc3D.setY(p.getY());
+		return calc3D;
 	}
 
-	public static void rotateZ(Point3D p, float theta) {
-		p.setX(p.getX() * (float)Math.cos(Math.toDegrees(theta)) - p.getY() * (float)Math.sin(Math.toDegrees(theta)));
-		p.setY(p.getX() * (float)Math.sin(Math.toDegrees(theta)) + p.getY() * (float)Math.cos(Math.toDegrees(theta)));
+	public static Point3D rotateZ(Point3D p, float theta) {
+		Point3D calc3D = new Point3D(p);
+		calc3D.setX(p.getX() * (float)Math.cos(Math.toDegrees(theta)) - p.getY() * (float)Math.sin(Math.toDegrees(theta)));
+		calc3D.setY(p.getX() * (float)Math.sin(Math.toDegrees(theta)) + p.getY() * (float)Math.cos(Math.toDegrees(theta)));
+		calc3D.setZ(p.getZ());
+		return calc3D;
 	}
 
 	public static Point3D getCenter3D(float x, float y, float z, float w, float h, float d) {
-		calc3D.setX(x + w/2f);
-		calc3D.setY(y + h/2f);
-		calc3D.setZ(z + d/2f);
+		Point3D calc3D = new Point3D(x + w/2f, y + h/2f, z - d/2f);
 		return calc3D;
 	}
 

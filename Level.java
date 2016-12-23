@@ -23,9 +23,7 @@ public class Level {
    private float segmentSize;
    private Point3D[] segPos;
    private float[] segZGrid;
-   private Point3D calc3D;
-   private Point3D calc3D2;
-   private Point3D pZero;
+   private Point3D pZero, calc3D, calc3D2;
 
    public enum Difficulty {
       EASY (0, 5, 15, 5, 0.25f), MEDIUM (1, 8, 15, 5, 0.25f), HARD (2, 10, 15, 5, 0.25f), EXTREME (3, 15, 15, 5, 0.25f);
@@ -84,10 +82,7 @@ public class Level {
       pZero = new Point3D(0,0,0);
 
       for(int i = 0; i < segments; i++) {
-         segPos[i] = new Point3D(0,0,0);
-         segPos[i].setX(-w/2);
-         segPos[i].setY(h);
-         segPos[i].setZ((float)i * segmentSize);
+         segPos[i] = new Point3D(-w/2,h,(float)i * segmentSize);
          segZGrid[i] = segPos[i].getZ();
       }
       this.travelDistance = segmentSize / (segmentSize * speed);
@@ -115,15 +110,17 @@ public class Level {
    }
 
    public void render(Drawing dSurface, Camera cam, int layer) {
+      calc3D = new Point3D(w,h,segmentSize);
+      calc3D2 = new Point3D(-w/2, h, segmentSize);
       // BACKGROUND
       if(layer == 0) {
          for(int i = 0; i < segments; i++) {
-            dSurface.drawPlane(cam, getSegmentX(i), getSegmentY(i), getSegmentZ(i), w, h, segmentSize, 0, 0, 0, Drawing.Facing.UP,
+            dSurface.drawPlane(cam, segPos[i], calc3D, pZero, pZero, Drawing.Facing.UP,
                                  xColor.lilShift(color[i].getRed(), color[i].getGreen(), color[i].getBlue(), color[i].getAlpha()), false);
          }
          for(int i = 0; i < darkness.length; i++) {
-            dSurface.drawPlane(cam, -w/2, h, segZGrid[segments - (i+1)], w, h, segmentSize, 0, 0, 0, Drawing.Facing.UP,
-                                 darkness[darkness.length - (i+1)], false);
+            calc3D2.setZ(segZGrid[segments - (i+1)]);
+            dSurface.drawPlane(cam, calc3D2, calc3D, pZero, pZero, Drawing.Facing.UP, darkness[darkness.length - (i+1)], false);
          }
          return;
       }
@@ -131,8 +128,9 @@ public class Level {
       // FOREGROUND
       if(layer == 2) {
          for(int i = 0; i < darkness.length; i++) {
-            dSurface.drawPlane(cam, -w/2, h, segZGrid[segments - (i+1)], w, 150, segmentSize, 0, 0, 0,  Drawing.Facing.BACKWARD,
-               darkness[darkness.length - (i+1)], false);
+            calc3D2.setZ(segZGrid[segments - (i+1)]);
+            calc3D.setY(150);
+            dSurface.drawPlane(cam, calc3D2, calc3D, pZero, pZero, Drawing.Facing.BACKWARD, darkness[darkness.length - (i+1)], false);
          }
          return;
       }
